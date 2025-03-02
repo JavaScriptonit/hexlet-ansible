@@ -1,6 +1,6 @@
 ---
 - name: Установка PostgreSQL на Ubuntu
-  hosts: serverspace_host  # Замените на ваше имя хоста или группу
+  hosts: serverspace_host
   become: yes  # Запуск от имени суперпользователя
   vars:
     db_name: mydatabase  # Название базы данных
@@ -31,37 +31,58 @@
         state: started
         enabled: yes
 
-    - name: Изменение метода аутентификации PostgreSQL
-      lineinfile:
-        path: /etc/postgresql/14/main/pg_hba.conf  # Убедитесь, что путь правильный
-        regexp: '^local +all +postgres .*'
-        line: 'local all postgres md5'
-        state: present
-      notify: Restart PostgreSQL
+    # ДОПИСАТЬ ТАСКИ НА СОЗДАНИЕ Postgres ПОЛЬЗОВАТЕЛЯ!
+    # Изменение метода аутентификации PostgreSQL НЕ НУЖНО, ТАК КАК С Postgres ПОЛЬЗОВАТЕЛЕМ ТАСКИ РАБОТАЮТ УСПЕШНО!
 
-    - name: Установка пароля для пользователя postgres
-      postgresql_user:
-        name: postgres
-        password: "{{ postgres_password }}"  # Замените на желаемый пароль
-        state: present
+    # - name: Изменение метода аутентификации PostgreSQL
+    #   lineinfile:
+    #     path: /etc/postgresql/14/main/pg_hba.conf
+    #     regexp: '^local +all +postgres .*'
+    #     line: 'local all postgres md5'
+    #     state: present
+    #   notify: Restart PostgreSQL
 
+    # - name: Установка пароля для пользователя postgres с помощью SQL
+    #   postgresql_query:
+    #     query: "ALTER USER postgres WITH PASSWORD '{{ postgres_password }}';"
+    #     db: postgres
+    #   when: postgres_password is defined  # Проверяем, что пароль определён
+
+  # handlers:
+  #   - name: Restart PostgreSQL
+  #     systemd:
+  #       name: postgresql
+  #       state: restarted
+
+- name: Создание базы данных на Ubuntu
+  hosts: serverspace_host_postgres
+  become: no  # Не используем sudo
+  vars:
+    db_name: mydatabase  # Название базы данных
+    db_user: myuser      # Имя пользователя базы данных
+    db_password: mysecurepassword  # Пароль пользователя базы данных
+    postgres_password: your_postgres_password  # Поскольку вы используете peer, этот параметр не нужен
+
+  tasks:
     - name: Создание базы данных
       postgresql_db:
         name: "{{ db_name }}"
         state: present
-
+        login_user: postgres  # Подключаемся под пользователем postgres
+        login_password: "{{ postgres_password }}" # ПРИ КОНФИГАХ (local all postgres peer) В ФАЙЛЕ /etc/postgresql/14/main/pg_hba.conf ПАРОЛЬ НЕ НУЖЕН!!! 
+    
     - name: Создание пользователя
       postgresql_user:
         name: "{{ db_user }}"
         password: "{{ db_password }}"
         state: present
 
-    - name: Предоставление всех привилегий пользователю на базе данных
-      postgresql_privs:
-        database: "{{ db_name }}"
-        role: "{{ db_user }}"
-        privs: ALL
-        state: present
+    # - name: Предоставление всех привилегий пользователю на базе данных
+    #   postgresql_privs:
+    #     database: "{{ db_name }}"
+    #     role: "{{ db_user }}"
+    #     privs: ALL # FAILED! => {"changed": false, "msg": "Argument \"objs\" is required for type \"table\"."}
+    #     state: present
 
     - name: Создание таблицы в базе данных
       postgresql_query:
@@ -78,9 +99,3 @@
         db: "{{ db_name }}"
         query: |
           INSERT INTO example_table (name) VALUES ('Example Name');
-
-  handlers:
-    - name: Restart PostgreSQL
-      systemd:
-        name: postgresql
-        state: restarted
