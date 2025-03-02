@@ -1,0 +1,86 @@
+---
+- name: Установка PostgreSQL на Ubuntu
+  hosts: serverspace_host  # Замените на ваше имя хоста или группу
+  become: yes  # Запуск от имени суперпользователя
+  vars:
+    db_name: mydatabase  # Название базы данных
+    db_user: myuser      # Имя пользователя базы данных
+    db_password: mysecurepassword  # Пароль пользователя базы данных
+    postgres_password: your_postgres_password  # Пароль для пользователя postgres
+
+  tasks:
+    - name: Установка пакета PostgreSQL
+      apt:
+        name: postgresql
+        state: present
+        update_cache: yes
+
+    - name: Установка расширений PostgreSQL
+      apt:
+        name: postgresql-contrib
+        state: present
+
+    - name: Установка библиотеки psycopg2
+      apt:
+        name: python3-psycopg2
+        state: present
+
+    - name: Запуск и включение службы PostgreSQL
+      systemd:
+        name: postgresql
+        state: started
+        enabled: yes
+
+    - name: Изменение метода аутентификации PostgreSQL
+      lineinfile:
+        path: /etc/postgresql/14/main/pg_hba.conf  # Убедитесь, что путь правильный
+        regexp: '^local +all +postgres .*'
+        line: 'local all postgres md5'
+        state: present
+      notify: Restart PostgreSQL
+
+    - name: Установка пароля для пользователя postgres
+      postgresql_user:
+        name: postgres
+        password: "{{ postgres_password }}"  # Замените на желаемый пароль
+        state: present
+
+    - name: Создание базы данных
+      postgresql_db:
+        name: "{{ db_name }}"
+        state: present
+
+    - name: Создание пользователя
+      postgresql_user:
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+        state: present
+
+    - name: Предоставление всех привилегий пользователю на базе данных
+      postgresql_privs:
+        database: "{{ db_name }}"
+        role: "{{ db_user }}"
+        privs: ALL
+        state: present
+
+    - name: Создание таблицы в базе данных
+      postgresql_query:
+        db: "{{ db_name }}"
+        query: |
+          CREATE TABLE IF NOT EXISTS example_table (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(100),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
+
+    - name: Вставка данных в таблицу
+      postgresql_query:
+        db: "{{ db_name }}"
+        query: |
+          INSERT INTO example_table (name) VALUES ('Example Name');
+
+  handlers:
+    - name: Restart PostgreSQL
+      systemd:
+        name: postgresql
+        state: restarted
