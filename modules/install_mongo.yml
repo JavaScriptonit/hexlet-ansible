@@ -1,0 +1,54 @@
+---
+- name: Установка MongoDB на Ubuntu 22.04
+  hosts: serverspace_host
+  become: yes  # Чтобы выполнять команды под sudo
+  vars:
+    mongo_version: "6.0"
+    mongodb_key_url: https://www.mongodb.org/static/pgp/server-6.0.asc
+    mongodb_gpg_keyfile: /usr/share/keyrings/mongodb-server-6.0.gpg
+
+  tasks:
+    - name: Обновление списка пакетов
+      apt:
+        update_cache: yes
+
+    - name: Установка зависимостей
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+
+    - name: Добавление ключа GPG для MongoDB
+      shell: |
+        wget -qO - {{ mongodb_key_url }} | gpg --dearmor -o {{ mongodb_gpg_keyfile }}
+      args:
+        creates: "{{ mongodb_gpg_keyfile }}"
+
+    - name: Добавление репозитория MongoDB
+      apt_repository:
+        repo: "deb [ arch=amd64 signed-by={{ mongodb_gpg_keyfile }} ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/{{ mongo_version }} multiverse"
+        # repo: "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/{{ mongo_version }}/multiverse"
+        state: present
+
+    - name: Установка MongoDB
+      apt:
+        name: mongodb-org
+        state: present
+
+    - name: Запуск службы MongoDB
+      service:
+        name: mongod
+        state: started
+        enabled: yes
+
+    - name: Проверка статуса службы MongoDB
+      command: systemctl status mongod
+      register: mongo_status
+      failed_when: mongo_status.rc != 0
+
+    - name: Вывод информации о статусе MongoDB
+      debug:
+        var: mongo_status.stdout_lines

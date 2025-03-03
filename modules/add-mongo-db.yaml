@@ -1,0 +1,84 @@
+---
+- name: Передача образов на машину
+  hosts: localhost
+  vars:
+    mongo_package: "mongodb-org-server_4.4.10_amd64.deb"  # Укажите имя вашего скачанного пакета
+    local_package_path: "/Users/andreyshabunov/{{ mongo_package }}"  # Укажите путь к локальному файлу
+  tasks: 
+    - name: Скачивание MongoDB пакета на локальный компьютер
+      get_url:
+        url: "https://repo.mongodb.org/apt/ubuntu/dists/focal/mongodb-org/4.4/multiverse/binary-amd64/{{ mongo_package }}"
+        dest: "{{ local_package_path }}"
+      # when: ansible_local is not defined  # Если вы запускаете на локальной машине, удалите это условие
+
+
+- name: Установка и настройка MongoDB без доступа в интернет
+  hosts: serverspace_host
+  become: true
+
+  vars:
+    mongo_package: "mongodb-org-server_4.4.10_amd64.deb"  # Укажите имя вашего скачанного пакета
+    mongo_user: "mongo_user"
+    mongo_password: "mongo_password"
+    db_name: "test_db"
+    test_collection: "test_collection"
+    local_package_path: "/Users/andreyshabunov/{{ mongo_package }}"  # Укажите путь к локальному файлу
+
+  tasks:
+    - name: Установка зависимости libssl1.1
+      apt:
+        name: libssl3
+        state: present
+
+    - name: Копирование пакета MongoDB на сервер
+      copy:
+        src: "{{ local_package_path }}"
+        dest: "/tmp/{{ mongo_package }}"
+
+    - name: Установка MongoDB из локального пакета
+      apt:
+        deb: "/tmp/{{ mongo_package }}"
+    
+    - name: Запуск службы MongoDB
+      systemd:
+        name: mongod
+        state: started
+        enabled: yes
+
+    - name: Проверка статуса службы MongoDB
+      systemd:
+        name: mongod
+      register: mongo_status
+
+    - name: Вывод статуса службы MongoDB
+      debug:
+        var: mongo_status
+
+    # - name: Создание базы данных (если её не существует)
+    #   # Command 'mongo' not found, but can be installed with:
+    #   command: >
+    #     mongo mydb --eval "db.createCollection('mycollection')"
+    #   ignore_errors: true
+
+
+    # - name: Создание пользователя MongoDB
+    #   mongodb_user:
+    #     name: '{{ mongo_user }}'
+    #     password: '{{ mongo_password }}'
+    #     database: '{{ db_name }}'
+    #     roles:
+    #       - role: readWrite
+    #         db: '{{ db_name }}'
+    #   register: mongo_user_creation
+    #   ignore_errors: true
+
+    - name: Проверка успешности создания пользователя
+      debug:
+        msg: "Пользователь '{{ mongo_user }}' успешно создан."
+      when: mongo_user_creation is not skipped and mongo_user_creation.changed
+
+    - name: Сообщение об ошибке при создании пользователя
+      debug:
+        msg: "Не удалось создать пользователя '{{ mongo_user }}'."
+      when: mongo_user_creation is skipped or not mongo_user_creation.changed
+
