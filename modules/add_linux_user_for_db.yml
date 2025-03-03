@@ -1,0 +1,90 @@
+---
+- name: Create new user with sudo privileges
+  hosts: serverspace_host
+  gather_facts: false
+  become: true
+
+  vars:
+    username: postgres
+  tasks:
+    - name: Проверка существования учетной записи "{{ username }}"
+      command: getent passwd "{{ username }}"
+      register: user_exists
+      ignore_errors: true
+
+    - name: Уведомление о существовании пользователя
+      debug:
+        msg: "Пользователь {{ username }} уже существует."
+      when: user_exists.rc == 0
+      notify: Сообщить о существовании пользователя
+
+    - name: Создание учетной записи "{{ username }}"
+      user:
+        name: "{{ username }}"
+        password: "{{ 'FarmPassword!@@' | password_hash('sha512') }}"
+        shell: /bin/bash
+      when: user_exists.rc != 0
+      register: created_user
+      notify: created
+
+    - name: Добавление учетной записи "{{ username }}" в группы sudo и docker
+      user:
+        name: "{{ username }}"
+        groups: sudo,docker
+        append: yes
+      notify: sudo_added
+
+    - name: Установка пароля для учетной записи "{{ username }}"
+      shell: echo "{{ username }}:your_postgres_password" | chpasswd --crypt-method=SHA512
+      # when: created_user.changed
+      notify: password_set
+
+    # - name: Set password expiry to 0 for the user
+    #   command: chage -d 0 {{ username }}
+    #   register: password_expired
+    #   notify: expiry_set
+
+    - name: Проверка наличия строки в /etc/sudoers
+      shell: grep -w "{{ username }} ALL=(ALL) NOPASSWD:ALL" /etc/sudoers
+      register: sudoers_line_exists
+      ignore_errors: true
+
+    - name: Добавление строки в /etc/sudoers
+      lineinfile:
+        path: /etc/sudoers
+        line: "{{ username }} ALL=(ALL) NOPASSWD:ALL"
+        validate: "visudo -cf %s"
+        state: present
+      when: sudoers_line_exists.rc != 0
+      notify: sudo_line_added
+
+  handlers:
+    - name: Сообщить о существовании пользователя
+      debug:
+        msg: "Пользователь {{ username }} уже существует."
+
+    - name: created
+      debug:
+        msg: >-
+          Учетная запись "{{ username }}" {{ 'создана' if created_user.changed else 'не создана, так как уже имеется на сервере' }}
+
+    - name: sudo_added
+      debug:
+        msg: >-
+          Группы 'sudo' и 'docker' добавлены для учетной записи "{{ username }}"
+
+    - name: password_set
+      debug:
+        msg: >-
+          Пароль для учетной записи "{{ username }}" установлен
+
+    - name: expiry_set
+      debug:
+        msg: >-
+          Срок действия для пароля учетной записи "{{ username }}" установлен
+      when: password_expired is changed
+
+    - name: sudo_line_added
+      debug:
+        msg: >-
+          Строка '{{ username }} ALL=(ALL) NOPASSWD:ALL' {{ 'добавлена' if sudoers_line_exists.rc != 0 else 'уже присутствует' }} в файл /etc/sudoers

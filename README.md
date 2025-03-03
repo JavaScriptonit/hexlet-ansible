@@ -1,4 +1,6 @@
 # hexlet-ansible
+https://coursehunter.net/course/osnovy-ansible?lesson=1
+# ПРОДОЛЖИТЬ УРОК С 11:35
 
 ## 1-ый урок 
 http://coursehunter.net/course/osnovy-ansible?lesson=1
@@ -13,4 +15,3 @@ http://coursehunter.net/course/osnovy-ansible?lesson=1
 1. Нужен только ssh для работы (не требует установки агентов как sheff или puppet)
 2. Описание состояния в yaml файлах (не требует языка ruby как sheff или puppet)
 3. Множество модулей из коробки
-

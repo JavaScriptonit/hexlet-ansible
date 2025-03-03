@@ -31,9 +31,7 @@
         state: started
         enabled: yes
 
-    # ДОПИСАТЬ ТАСКИ НА СОЗДАНИЕ Postgres ПОЛЬЗОВАТЕЛЯ!
     # Изменение метода аутентификации PostgreSQL НЕ НУЖНО, ТАК КАК С Postgres ПОЛЬЗОВАТЕЛЕМ ТАСКИ РАБОТАЮТ УСПЕШНО!
-
     # - name: Изменение метода аутентификации PostgreSQL
     #   lineinfile:
     #     path: /etc/postgresql/14/main/pg_hba.conf
@@ -71,19 +69,27 @@
         login_user: postgres  # Подключаемся под пользователем postgres
         login_password: "{{ postgres_password }}" # ПРИ КОНФИГАХ (local all postgres peer) В ФАЙЛЕ /etc/postgresql/14/main/pg_hba.conf ПАРОЛЬ НЕ НУЖЕН!!! 
     
+    # \du - Проверка прав пользователя в psql
     - name: Создание пользователя
       postgresql_user:
+        # db: "{{ db_name }}"
         name: "{{ db_user }}"
         password: "{{ db_password }}"
+        # priv: ALL
         state: present
 
-    # - name: Предоставление всех привилегий пользователю на базе данных
-    #   postgresql_privs:
-    #     database: "{{ db_name }}"
-    #     role: "{{ db_user }}"
-    #     privs: ALL # FAILED! => {"changed": false, "msg": "Argument \"objs\" is required for type \"table\"."}
-    #     state: present
+    # \c mydatabase - Подключение к базе данных
+    # SELECT grantee, privilege_type FROM information_schema.role_table_grants WHERE table_catalog = 'mydatabase' AND grantee = 'myuser'; - Проверка привилегий пользователя
+    - name: Предоставление всех привилегий пользователю на базе данных
+      postgresql_privs:
+        database: "{{ db_name }}"
+        role: "{{ db_user }}"
+        privs: ALL
+        objs: ALL_IN_SCHEMA
+        state: present
 
+    # \c mydatabase - Подключение к базе данных
+    # \dt - Проверка созданных таблиц
     - name: Создание таблицы в базе данных
       postgresql_query:
         db: "{{ db_name }}"
@@ -94,8 +100,17 @@
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           );
 
+    # \c mydatabase - Подключение к базе данных
+    # SELECT * FROM example_table; - Проверка вставленных данных в таблице
     - name: Вставка данных в таблицу
       postgresql_query:
         db: "{{ db_name }}"
         query: |
           INSERT INTO example_table (name) VALUES ('Example Name');
+
+    # \du - Проверка прав пользователя в psql
+    - name: Предоставление всех привилегий пользователю
+      postgresql_user:
+        name: "{{ db_user }}"
+        role_attr_flags: "SUPERUSER"  # Добавляем нужные привилегии
+        state: present
