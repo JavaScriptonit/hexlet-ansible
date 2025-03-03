@@ -1,0 +1,39 @@
+- name: Установка и настройка MongoDB без доступа в интернет
+  hosts: serverspace_host
+  become: true
+
+  vars:
+    mongo_user: "mongo_user"
+    mongo_password: "mongo_password"
+    db_name: "test_db"
+
+
+# РАЗОБРАТЬСЯ С ОШИБКОЙ "-bash: mongo: command not found"
+# клиент MongoDB (команда mongo) не установлен или не добавлен в переменную окружения PATH
+  tasks:
+    - name: Установка pip для Python 3
+      apt:
+        name: python3-pip
+        state: present
+
+    - name: Установка библиотеки pymongo
+      pip:
+        name: pymongo
+        state: present
+        executable: pip3
+
+    - name: Создание пользователя MongoDB
+      mongodb_user:
+        name: '{{ mongo_user }}'
+        password: '{{ mongo_password }}'
+        database: '{{ db_name }}'
+        roles:
+          - role: readWrite
+            db: '{{ db_name }}'
+      register: mongo_user_creation
+      ignore_errors: true
+
+    - name: Сообщение об ошибке при создании пользователя
+      debug:
+        msg: "Не удалось создать пользователя '{{ mongo_user }}'."
+      when: mongo_user_creation is skipped or not mongo_user_creation.changed
