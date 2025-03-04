@@ -30,7 +30,8 @@
     - name: Добавление учетной записи "{{ username }}" в группы sudo и docker
       user:
         name: "{{ username }}"
-        groups: sudo,docker
+        # groups: sudo,docker
+        groups: sudo
         append: yes
       notify: sudo_added
 
