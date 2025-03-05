@@ -1,0 +1,33 @@
+# commit_tasks.yml
+- name: Добавление кода в файл
+  lineinfile:
+    path: "{{ file_path }}"
+    line: "Новая строка с добавлением кода в {{ ansible_date_time.iso8601 }}"
+
+- name: Добавление изменений в индекс
+  command: git add .
+  args:
+    chdir: "{{ repo_path }}"
+  register: add_result
+  until: add_result.rc == 0
+  retries: 3
+  delay: 1
+
+- name: Коммит изменений
+  command: git commit -m "Добавление измененного кода {{ item }}"
+  args:
+    chdir: "{{ repo_path }}"
+  register: commit_result
+  until: commit_result.rc == 0
+  retries: 3
+  delay: 1
+  loop: "{{ range(1, number_of_commits + 1) | list }}"
+
+- name: Пуш репозитория
+  command: git push
+  args:
+    chdir: "{{ repo_path }}"
+  register: push_result
+  until: push_result.rc == 0
+  retries: 3
+  delay: 1

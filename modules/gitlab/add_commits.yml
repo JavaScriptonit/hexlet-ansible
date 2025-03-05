@@ -5,65 +5,9 @@
 
   vars:
     file_path: "/Users/andreyshabunov/PhpstormProjects/hexlet/Ansible/modules/gitlab/commit_file.md"
-    commit_message: "Добавление измененного кода"
-    number_of_commits: 1
+    repo_path: "/Users/andreyshabunov/PhpstormProjects/hexlet/Ansible"
+    number_of_commits: 100
 
   tasks:
-    - name: Добавление кода в файл
-      lineinfile:
-        path: "{{ file_path }}"
-        line: "Новая строка с добавлением кода в {{ ansible_date_time.iso8601 }}"
-
-    - name: Добавление изменений в индекс
-      command: git add .
-      args:
-        chdir: "/Users/andreyshabunov/PhpstormProjects/hexlet/Ansible"
-      register: add_result
-      until: add_result.rc == 0
-      retries: 3
-      delay: 1
-      
-    - name: Коммит изменений
-      command: git commit -m "Добавление измененного кода {{ item }}"
-      args:
-        chdir: "/Users/andreyshabunov/PhpstormProjects/hexlet/Ansible"
-      register: commit_result
-      until: commit_result.rc == 0
-      retries: 3
-      delay: 1
-      loop: "{{ range(1, number_of_commits + 1) | list }}"
-
-    - name: Пуш репозитория
-      command: git push
-      args:
-        chdir: "/Users/andreyshabunov/PhpstormProjects/hexlet/Ansible"
-      register: push_result
-      until: push_result.rc == 0
-      retries: 3
-      delay: 1
-
-    # - name: Выполнение 100 коммитов и пушей
-    #   block:
-    #     - name: Добавление кода в файл
-    #       lineinfile:
-    #         path: "{{ file_path }}"
-    #         line: "Новая строка с добавлением кода в {{ ansible_date_time.iso8601 }}"
-
-    #     - name: Коммит изменений
-    #       command: git commit -m "{{ commit_message }}"
-    #       args:
-    #         chdir: "/Users/andreyshabunov/PhpstormProjects/hexlet/Ansible"
-    #       register: commit_result
-    #       until: commit_result.rc == 0
-    #       retries: 3
-    #       delay: 1
-
-    #     - name: Пуш репозитория
-    #       command: git push
-    #       args:
-    #         chdir: "/Users/andreyshabunov/PhpstormProjects/hexlet/Ansible"
-    #       register: push_result
-    #       until: push_result.rc == 0
-    #       retries: 3
-    #       delay: 1
-    #   loop: "{{ range(1, number_of_commits + 1) | list }}"
+    - name: Выполнение 100 коммитов и пушей
+      include_tasks: commit_tasks.yml
