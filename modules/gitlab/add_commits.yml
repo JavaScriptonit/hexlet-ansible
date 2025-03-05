@@ -6,7 +6,7 @@
   vars:
     file_path: "/Users/andreyshabunov/PhpstormProjects/hexlet/Ansible/modules/gitlab/commit_file.md"
     repo_path: "/Users/andreyshabunov/PhpstormProjects/hexlet/Ansible"
-    number_of_commits: 2
+    number_of_commits: 10
 
   tasks:
     - name: Цикл по количеству коммитов
