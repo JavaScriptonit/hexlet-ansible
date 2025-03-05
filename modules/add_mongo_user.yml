@@ -7,9 +7,6 @@
     mongo_password: "mongo_password"
     db_name: "test_db"
 
-
-# РАЗОБРАТЬСЯ С ОШИБКОЙ "-bash: mongo: command not found"
-# клиент MongoDB (команда mongo) не установлен или не добавлен в переменную окружения PATH
   tasks:
     - name: Установка pip для Python 3
       apt:
@@ -37,3 +34,10 @@
       debug:
         msg: "Не удалось создать пользователя '{{ mongo_user }}'."
       when: mongo_user_creation is skipped or not mongo_user_creation.changed
+
+# Проверка на сервере создания БД и пользователя:
+# mongosh
+# use test_db
+# db.getUsers()
+# db.getUser("mongo_user")
+# exit
