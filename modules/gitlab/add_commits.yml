@@ -6,7 +6,7 @@
   vars:
     file_path: "/Users/andreyshabunov/PhpstormProjects/hexlet/Ansible/modules/gitlab/commit_file.md"
     commit_message: "Добавление измененного кода"
-    number_of_commits: 100
+    number_of_commits: 1
 
   tasks:
     - name: Добавление кода в файл
@@ -24,13 +24,14 @@
       delay: 1
       
     - name: Коммит изменений
-      command: git commit -m "{{ commit_message }}"
+      command: git commit -m "Добавление измененного кода {{ item }}"
       args:
         chdir: "/Users/andreyshabunov/PhpstormProjects/hexlet/Ansible"
       register: commit_result
       until: commit_result.rc == 0
       retries: 3
       delay: 1
+      loop: "{{ range(1, number_of_commits + 1) | list }}"
 
     - name: Пуш репозитория
       command: git push
