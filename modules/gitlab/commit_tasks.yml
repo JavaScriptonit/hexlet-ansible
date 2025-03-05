@@ -1,8 +1,10 @@
 # commit_tasks.yml
+
 - name: Добавление кода в файл
   lineinfile:
     path: "{{ file_path }}"
-    line: "Новая строка с добавлением кода в {{ ansible_date_time.iso8601 }}"
+    line: "Новая строка с добавлением кода в {{ ansible_date_time.iso8601 }} {{ item }}"
+  loop: "{{ range(1, number_of_commits + 1) | list }}"
 
 - name: Добавление изменений в индекс
   command: git add .
