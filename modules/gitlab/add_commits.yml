@@ -6,8 +6,11 @@
   vars:
     file_path: "/Users/andreyshabunov/PhpstormProjects/hexlet/Ansible/modules/gitlab/commit_file.md"
     repo_path: "/Users/andreyshabunov/PhpstormProjects/hexlet/Ansible"
-    number_of_commits: 100
+    number_of_commits: 2
 
   tasks:
-    - name: Выполнение 100 коммитов и пушей
+    - name: Цикл по количеству коммитов
       include_tasks: commit_tasks.yml
+      loop: "{{ range(1, number_of_commits + 1) | list }}"
+      loop_control:
+        loop_var: commit_number

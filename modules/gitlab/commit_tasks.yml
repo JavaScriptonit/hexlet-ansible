@@ -3,8 +3,7 @@
 - name: Добавление кода в файл
   lineinfile:
     path: "{{ file_path }}"
-    line: "Новая строка с добавлением кода в {{ ansible_date_time.iso8601 }} {{ item }}"
-  loop: "{{ range(1, number_of_commits + 1) | list }}"
+    line: "Новая строка с добавлением кода в {{ ansible_date_time.iso8601 }} {{ commit_number }}"
 
 - name: Добавление изменений в индекс
   command: git add .
@@ -16,14 +15,13 @@
   delay: 1
 
 - name: Коммит изменений
-  command: git commit -m "Добавление измененного кода {{ item }}"
+  command: git commit -m "Добавление измененного кода {{ commit_number }}"
   args:
     chdir: "{{ repo_path }}"
   register: commit_result
   until: commit_result.rc == 0
   retries: 3
   delay: 1
-  loop: "{{ range(1, number_of_commits + 1) | list }}"
 
 - name: Пуш репозитория
   command: git push
