@@ -26,3 +26,9 @@ ansible-playbook modules/install_mongo.yml -i modules/hosts
 ansible-playbook modules/add_mongo_user.yml -i modules/hosts
 ```
 
+3. Пуш в гитлаб:
+```
+git add .
+git commit -m "update readme and mongo task"
+git push -u origin main
+```
