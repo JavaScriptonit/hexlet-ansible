@@ -1,5 +1,5 @@
 # hexlet-ansible
-https://coursehunter.net/course/osnovy-ansible?lesson=3
+https://coursehunter.net/course/osnovy-ansible?lesson=6
 # ПРОДОЛЖИТЬ УРОК С 00:01
 
 ## 1-ый урок 
@@ -40,4 +40,26 @@ ansible all -i ./modules/hosts -m command -a 'uptime'
 78.140.241.18 | CHANGED | rc=0 >>
  21:06:51 up 24 min,  2 users,  load average: 0.06, 0.03, 0.05
 ```
-3. 
+3. Проверить версию операционной системы:
+```
+ansible all -i ./modules/hosts -m command -a 'lsb_release -a'
+ansible all -i ./modules/hosts -m command -a 'cat /etc/redhat-release'
+ansible all -i ./modules/hosts -m command -a 'cat /etc/os-release'
+ansible all -i ./modules/hosts -m command -a 'uname -a'
+```
+Ответ:
+```
+78.140.243.13 | CHANGED | rc=0 >>
+Distributor ID: Ubuntu
+Description:    Ubuntu 22.04.2 LTS
+Release:        22.04
+Codename:       jammyNo LSB modules are available.
+```
+4. Добавление тегов в playbook:
+Для выполнения задач с тегом docker:
+```
+tags: docker
+
+ansible-playbook modules/install_postgresql.yml -i modules/hosts -t docker
+ansible-playbook modules/install_postgresql.yml -i modules/hosts --skip-tags docker
+```
