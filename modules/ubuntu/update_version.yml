@@ -1,0 +1,27 @@
+# Плейбук для обновления версии Убунту
+# В облаке не работает, так как версии без изменений - In /etc/update-manager/release-upgrades Prompt ", "is set to never so upgrading is not possible."
+# В Банке не работает, так как нужно поменять настройки прокси
+---
+- name: Обновление Ubuntu до 24.04
+  hosts: serverspace_host
+  become: true
+  tasks:
+    - name: Обновление пакетов и системы
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Установка пакета `update-manager-core` (если не установлен)
+      apt:
+        name: update-manager-core
+        state: present
+
+    - name: Запуск обновления дистрибутива
+      command: do-release-upgrade -f DistUpgradeViewNonInteractive
+      register: upgrade_result
+      when: ansible_distribution_release == "jammy"
+
+    - name: Вывод результата обновления
+      debug:
+        var: upgrade_result.stdout
+      when: upgrade_result is defined
